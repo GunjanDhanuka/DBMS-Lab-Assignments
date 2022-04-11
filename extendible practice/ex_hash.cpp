@@ -7,23 +7,21 @@ class Bucket
 {
 private:
     int local_depth;
+    int order;
     int bucket_capacity;
     vector<int> data;
 
 public:
-    Bucket(int bucket_cap)
+    Bucket(int bucket_cap, int ld)
     {
-        local_depth = 1;
+        local_depth = ld;
+        order = 0;
         bucket_capacity = bucket_cap;
-        //data.clear();
-        data.push_back(5);
-        //data.pop_back();
-        cout << data.size() << endl;
+        cout << "Bucket created\n";
     }
     ~Bucket()
     {
         // dtor
-        //data.clear();
     }
 
     int get_local_depth()
@@ -48,6 +46,10 @@ public:
     void clear_bucket(){
         data.clear();
         return;
+    }
+
+    void increase_order(){
+        order++;
     }
 
     bool is_bucket_full()
@@ -122,7 +124,7 @@ public:
 
         // inserting two buckets into the directory
         for(int i = 0; i < (1<<global_depth_in); i++){
-            add_new_bucket();
+            add_new_bucket(global_depth);
             //cout << directory[i] << endl;
         }
     }
@@ -158,8 +160,8 @@ public:
         bucket_cap = value;
     }
 
-    void add_new_bucket(){
-        directory.push_back(new Bucket(bucket_cap));
+    void add_new_bucket(int ld){
+        directory.push_back(new Bucket(bucket_cap, ld));
     }
 
     void insert_value(int value)
@@ -168,9 +170,10 @@ public:
         if (directory[dir_id]->is_bucket_full())
         {
             // bucket full
-
+            cout << "bucket full\n";
             //local depth = global depth => directory doubling and bucket rearrangement
             if(directory[dir_id]->get_local_depth() == get_global_depth()){
+                cout << "ld == gd\n";
                 int old_gd = get_global_depth();
 
                 if(old_gd == max_global_depth){
@@ -179,20 +182,25 @@ public:
                 }
 
                 //doubling the directory with two pointers pointing to a single bucket
+                
                 for(int di = 0; di < (1<<old_gd); di++){
-                   directory.push_back(directory[di]);
+                    Bucket* tmp = directory[di];
+                    directory.push_back(tmp);
                 }
+
+
 
                 //update global depth
                 set_global_depth(old_gd+1);
 
                 //create copy of prev elements of overflowing bucket
                 vector<int> elements = directory[dir_id]->get_bucket_elements();
+                cout << "size of temp bucket " << elements.size() << endl;
 
                 
                 int new_dir_id = (1<<get_global_depth())&dir_id;
 
-                directory[new_dir_id] = new Bucket(bucket_cap);
+                directory[new_dir_id] = new Bucket(bucket_cap, global_depth);
 
                 directory[dir_id]->clear_bucket();
                 directory[new_dir_id]->clear_bucket();
@@ -213,7 +221,7 @@ public:
                 int old_hf = hash_fn(value);
                 int new_dir_id = (1<<get_global_depth())&dir_id;
 
-                directory[new_dir_id] = new Bucket(bucket_cap);
+                directory[new_dir_id] = new Bucket(bucket_cap, global_depth);
 
                 directory[dir_id]->clear_bucket();
                 directory[new_dir_id]->clear_bucket();
@@ -232,6 +240,7 @@ public:
         {
             // bucket not full
             directory[dir_id]->insert_into_bucket(value);
+            cout << value << " is inserted now.\n";
             return;
         }
     }
@@ -279,9 +288,12 @@ public:
         cout << directory.size() << endl;
         for (int di = 0; di < directory.size(); di++)
         {
-            cout << "Bucket ID: " << di << endl;
-            // directory[di]->print_bucket();
-            cout << directory[di]->get_size_of_bucket() << " " << directory[di]->get_local_depth() << endl;
+            if(directory[di]->get_size_of_bucket()){
+                cout << "Bucket ID: " << di << endl;
+                // directory[di]->print_bucket();
+                cout << directory[di]->get_size_of_bucket() << " " << directory[di]->get_local_depth() << endl;    
+            }
+            
         }
     }
 
